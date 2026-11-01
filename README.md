@@ -17,6 +17,7 @@ promptfoo/
 ├── AGENTS.md                    # Project configuration notes
 │
 └── CLI Scripts (Cross-platform)
+    ├── codex.js                 # OpenAI Codex CLI (provider + grader)
     ├── claude.js                # Claude Code CLI (provider + grader)
     ├── devin.js                 # Devin CLI (provider + grader)
     ├── gh_copilot.js            # GitHub Copilot CLI (provider + grader)
@@ -44,6 +45,7 @@ The configuration currently uses **Devin CLI** as the default provider for both 
 ### Available Providers
 All scripts are cross-platform Node.js files that work on Windows, Linux, and Mac:
 
+- **OpenAI Codex CLI** (`codex.js`) - OpenAI's Codex assistant
 - **Claude Code CLI** (`claude.js`) - Anthropic's Claude Code assistant
 - **Devin CLI** (`devin.js`) - Cognition's Devin AI assistant
 - **GitHub Copilot CLI** (`gh_copilot.js`) - GitHub's Copilot assistant
@@ -60,6 +62,60 @@ Each CLI script combines both provider and grader functionality in one file, aut
 - **Grader mode**: When the prompt is a JSON array `[{role, content}, ...]`, the script acts as a grader, parsing the chat array and routing system/user messages appropriately
 
 This eliminates the need for separate provider and grader scripts while maintaining full functionality.
+
+### Codex CLI Setup
+
+Install the OpenAI Codex CLI and authenticate before running evaluations:
+
+```bash
+npm install -g @openai/codex
+codex login
+codex --version
+```
+
+`codex.js` uses `codex exec` non-interactively. It uses the CLI's configured
+model by default; optional `config.model` overrides it in both provider and grader
+modes. It sends prompts through stdin and returns only the final assistant response,
+not progress messages or tool output. Grader chat messages are combined in order
+with role labels; these labels are prompt text, not separate API-level roles.
+
+Runs use a **read-only sandbox** without bypassing approvals, so evaluated prompts
+cannot request workspace writes through Codex's sandboxed tools. Codex still uses
+your local configuration and repository context; this is a CLI evaluation, not an
+isolated API call. Each invocation is a fresh session and works outside Git repositories.
+Temporary response files are removed on success and failure.
+
+To opt in, uncomment the `Codex` entry under `providers` in `promptfooconfig.yaml`.
+To use it as the rubric grader too, set `defaultTest.options.provider` to `Codex`.
+Devin remains the checked-in default for both roles.
+
+```yaml
+# Optional provider configuration:
+- id: 'exec: node ./codex.js'
+  label: 'Codex'
+  # config:
+  #   model: 'your-available-model-id'
+```
+
+Direct smoke tests (these invoke your authenticated CLI and may incur usage):
+
+```bash
+node ./codex.js "What is 2+2?" '{}'
+node ./codex.js '[{"role":"system","content":"Return only JSON with pass, score, and reason."},{"role":"user","content":"Evaluate: 2+2=4"}]' '{}'
+```
+
+Run offline wrapper tests without authentication or model calls:
+
+```bash
+node --test tests/codex.test.js
+```
+
+Codex must be on `PATH`. On Windows, the wrapper supports a native `codex.exe` or
+the standard global npm installation of `@openai/codex`; it runs the npm JavaScript
+entry point with Node rather than passing prompts through `cmd.exe`. CLI failures,
+invalid options, and missing or empty final responses produce a nonzero exit and
+an error on stderr. The promptfoo exec interface still passes the initial prompt
+as a script argument, so OS argument-size limits can apply before the wrapper runs.
 
 ## Evaluation Types
 
@@ -87,14 +143,14 @@ Uses a judge LLM to score the response against natural language criteria. Each a
 
 #### Grader Provider
 
-The judge LLM is configured under `defaultTest.options.provider`. This project uses `devin.js` (which auto-detects grader mode), but the combined scripts for Claude, GitHub Copilot, Google Antigravity (AGY), and Kiro are also available.
+The judge LLM is configured under `defaultTest.options.provider`. This project uses `devin.js` (which auto-detects grader mode), but the combined scripts for Codex, Claude, GitHub Copilot, Google Antigravity (AGY), and Kiro are also available.
 
 > **How grader mode works**: When the combined scripts receive a JSON chat array
 > (`[{"role":"system",...}, {"role":"user",...}]`), they automatically enter grader mode,
 > parse the array, and route each part correctly to the CLI tool.
 >
 > Claude Code supports `--system-prompt` to replace its default context entirely,
-> keeping system and user messages separate. Devin, GitHub Copilot, Google Antigravity (AGY), and Kiro don't have an
+> keeping system and user messages separate. Codex combines all chat messages in order with role labels. Devin, GitHub Copilot, Google Antigravity (AGY), and Kiro don't have an
 > equivalent flag, so their scripts concatenate the system instructions and user
 > message into one combined prompt instead.
 
@@ -265,6 +321,7 @@ module.exports = {
 
 - Node.js (for promptfoo and CLI scripts)
 - CLI tools for the providers you want to use:
+  - OpenAI Codex CLI (`codex`, authenticated with `codex login`)
   - Claude Code CLI (`claude`)
   - Devin CLI (`devin`)
   - GitHub Copilot CLI (`gh copilot`)

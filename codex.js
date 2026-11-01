@@ -49,8 +49,7 @@ function run(prompt, options = '{}', runtime = {}) {
   let command = 'codex';
   let prefix = [];
   if (platform === 'win32') {
-    // npm's .cmd launcher cannot be spawned without a shell. Resolve its JS
-    // entry point instead, keeping model names and prompts out of cmd.exe.
+    // Shell-free Windows launcher contract: see codex.SPEC.md.
     const located = spawn('where.exe', ['codex'], { encoding: 'utf8' });
     const candidates = (located.stdout || '').trim().split(/\r?\n/);
     const native = candidates.find(file => /\.exe$/i.test(file) && fs.existsSync(file));
