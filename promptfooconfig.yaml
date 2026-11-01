@@ -20,6 +20,9 @@ defaultTest:
     # Devin CLI grader — ACTIVE
     provider: 'Devin SWE-1.6'
     #
+    # OpenAI Codex CLI grader
+    # provider: 'Codex'
+    #
     # GitHub Copilot CLI grader
     # provider: 'GitHub Haiku'
     #
@@ -61,6 +64,12 @@ providers:
   #   label: 'Haiku' # MUST provide label when using same provider with different config!
   #   config:
   #     model: 'claude-haiku-4.5'
+
+  # OpenAI Codex CLI provider (uses Codex's configured model by default)
+  # - id: 'exec: node ./codex.js'
+  #   label: 'Codex'
+  #   config:
+  #     model: 'your-available-model-id' # optional; omit config to use CLI default
 
   # GitHub Copilot CLI provider
   # - id: 'exec: node ./gh_copilot.js'

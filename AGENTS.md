@@ -23,6 +23,7 @@ Combined scripts that auto-detect mode based on prompt format:
 - **Provider mode**: Prompt is plain text
 
 ### Active Scripts
+- `codex.js` - OpenAI Codex CLI (provider + grader; read-only sandbox)
 - `devin.js` - Devin CLI (provider + grader)
 - `gh_copilot.js` - GitHub Copilot CLI (provider + grader)
 - `claude.js` - Claude Code CLI (provider + grader)
